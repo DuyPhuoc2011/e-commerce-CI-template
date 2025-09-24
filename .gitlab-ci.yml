@@ -1,0 +1,19 @@
+# Example GitLab CI template for e-commerce projects
+stages:
+  - build
+  - test
+
+build:
+  stage: build
+  image: node:18
+  script:
+    - npm ci
+
+test:
+  stage: test
+  image: node:18
+  script:
+    - npm test
+  # Add more stages and jobs as needed for your e-commerce project
+
+# To use this template, copy it to your repository's root directory and customize as needed.

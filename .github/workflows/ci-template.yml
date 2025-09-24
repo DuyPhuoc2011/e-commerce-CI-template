@@ -1,0 +1,45 @@
+# Add jobs section for the reusable workflow
+jobs:
+  build-and-push:
+    runs-on: [self-hosted, ecommerce]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # - name: Debug with SSH
+      #   uses: mxschmitt/action-tmate@v3
+      #   if: ${{ github.event_name == 'push'}}
+
+      - name: Login to LocalStack ECR
+        #run: docker login -u AWS --password-stdin $(aws --profile=localstack ecr get-login-password --region us-east-1) 000000000000.dkr.ecr.us-east-1.localhost.localstack.cloud:4566
+        run: |
+          source ~/.profile
+          aws ecr get-login-password --region us-east-1 --profile localstack | docker login --username AWS --password-stdin 000000000000.dkr.ecr.us-east-1.localhost.localstack.cloud:4566
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: 000000000000.dkr.ecr.us-east-1.localhost.localstack.cloud:4566/${{ inputs.service_name }}
+          tags: |
+            type=sha,format=short,prefix=
+      
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: ${{ github.event_name == 'push'  }}  # Push only on main branch push
+          tags: ${{ steps.meta.outputs.tags }}
+          add-hosts: 000000000000.dkr.ecr.us-east-1.localhost.localstack.cloud:192.168.1.24
+
+name: E-commerce CI Template
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        required: true
+        type: string
+
